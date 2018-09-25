@@ -1,5 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
+using System.Speech.Synthesis;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Forms;
 using CefSharp;
@@ -15,7 +18,9 @@ namespace caeDBManager
     {
         // Chromium Embedded Framework
         static IBrowser xd;
+        public string text = "Dummy text";
         public CefSharp.WinForms.ChromiumWebBrowser browser = (CefSharp.WinForms.ChromiumWebBrowser)xd;
+        SpeechSynthesizer speechSynthesizer = new SpeechSynthesizer();
         // SQL Connection
         private MySqlConnection mcon;
         MySqlCommand mcd;
@@ -45,6 +50,36 @@ namespace caeDBManager
             InitializeComponent();
         }
 
+
+        private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
+        {
+            const string message = "Are you sure that you would like to exit?";
+            const string caption = "Closing";
+            var result = MessageBox.Show(message, caption,
+                                         MessageBoxButtons.YesNo,
+                                         MessageBoxIcon.Question);
+
+            if (result == System.Windows.Forms.DialogResult.Yes)
+            {
+                e.Cancel = false;
+            }
+            else
+            {
+                e.Cancel = true;
+            }
+
+        }
+
+        [ComVisible(true)]
+        public class FrameElementInterceptor
+        {
+            public void Intercept(string propKey, object[] args)
+            {
+                MessageBox.Show($@"Function '{propKey}' was called with arguments: [{string.Join(", ", args)}]",
+        @"Function call intercepted");
+            }
+        }
+
         // Show AddTutor Form
         private void AddBttn_OnClick(object sender, RoutedEventArgs e)
         {
@@ -66,14 +101,41 @@ namespace caeDBManager
             form.Show();
         }
 
+        [STAThread]
         private void MainWindow_OnLoaded(object sender, RoutedEventArgs e)
         {
+            //    Xpcom.Initialize("Firefox");
+            //    var geckoWebBrowser = new GeckoWebBrowser { Dock = DockStyle.Fill };
+            //    Form f = new Form();
+            //    f.Controls.Add(geckoWebBrowser);
+            //    geckoWebBrowser.Navigate(App.url);
+            //f.Show();
+
+            speechSynthesizer.Volume = 100;
+            speechSynthesizer.Speak("Welcome!");
+
+            //Set sizes
+            double height = SystemParameters.VirtualScreenHeight- TopPanel.Height - BrowserControl.Height - 72;
+            browser_Stack.Height = height;
             // Start Chromium
             System.Windows.Forms.Integration.WindowsFormsHost host = new System.Windows.Forms.Integration.WindowsFormsHost();
-            browser = new CefSharp.WinForms.ChromiumWebBrowser(App.url)
+            host.MaxHeight = browser_Stack.Height;
+
+            CefSettings settings = new CefSettings();
+            string path = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+            settings.RemoteDebuggingPort = 8080;
+            settings.CachePath = path;
+
+            //For legacy biding we'll still have support for
+            CefSharpSettings.LegacyJavascriptBindingEnabled = true;
+
+            //Initialize Cef with the provided settings
+            Cef.Initialize(settings);
+            
+            browser = new CefSharp.WinForms.ChromiumWebBrowser(Properties.Settings.Default["DefaultURL"].ToString())
             {
                 Dock = DockStyle.Fill,
-                Size = new System.Drawing.Size(Screen.PrimaryScreen.WorkingArea.Width, Screen.PrimaryScreen.WorkingArea.Height),
+                Size = new System.Drawing.Size(System.Windows.Forms.Screen.PrimaryScreen.WorkingArea.Width, System.Windows.Forms.Screen.PrimaryScreen.WorkingArea.Height),
                 Location = new System.Drawing.Point(0,0),
 
             };
@@ -85,7 +147,86 @@ namespace caeDBManager
             // Add the interop host control to the Grid
             // control's collection of child controls.
             browser_Stack.Children.Add(host);
+
+            browser.FrameLoadEnd += Browser_FrameLoadEnd;
         }
+
+        private void Browser_FrameLoadEnd(object sender, FrameLoadEndEventArgs e)
+        { 
+        Voice_handler();
+        }
+
+        private async void Voice_handler()
+        {
+            if (!(bool)Properties.Settings.Default["Mute"])
+            {
+                int voiceGender = Int32.Parse(Properties.Settings.Default["VoiceGender"].ToString());
+                if (voiceGender == 0)
+                {
+                    speechSynthesizer.SelectVoiceByHints(VoiceGender.Male, VoiceAge.Adult);
+                }
+                if (voiceGender == 1)
+                {
+                    speechSynthesizer.SelectVoiceByHints(VoiceGender.Female, VoiceAge.Adult);
+                }
+                if (voiceGender == 2)
+                {
+                    speechSynthesizer.SelectVoiceByHints(VoiceGender.Female, VoiceAge.Adult);
+                }
+
+                speechSynthesizer.Volume = 100;
+                bool talk = false;
+                while (!talk)
+                {
+                    var textstring = "Welcome";
+                    try
+                    {
+                        string script = string.Format("document.getElementById('speech').value;");
+                        await browser.EvaluateScriptAsync(script).ContinueWith(x =>
+                        {
+                            var response = x.Result;
+
+                            if (response.Success && response.Result != null)
+                            {
+                                //Delete <u>
+                                textstring = response.Result.ToString();
+                                string delete1 = "<u>";
+                                textstring = textstring.Replace(delete1, "");
+                                string delete2 = "</u>";
+                                textstring = textstring.Replace(delete2, "");
+                                //Delete <strong>
+                                delete1 = "<strong>";
+                                textstring = textstring.Replace(delete1, "");
+                                delete2 = "</strong>";
+                                textstring = textstring.Replace(delete2, "");
+                                //startDate is the value of a HTML element.
+                            }
+                            else
+                            {
+
+                            }
+                        });
+                    }
+                    catch (Exception ex)
+                    {
+                        string exc = ex.ToString();
+                    }
+
+                    if (text != textstring)
+                    {
+                        text = textstring;
+                        if (text != "Welcome")
+                        {
+                            speechSynthesizer.Speak(text);
+                        }
+                    }
+                    talk = true;
+                }
+                await Task.Delay(6000);
+                Voice_handler();
+            } 
+        }
+
 
         // Hide Advanced Options and Show the main windows
         private void MainWindows_Click(object sender, RoutedEventArgs e)
@@ -146,9 +287,7 @@ namespace caeDBManager
             {
                 Console.WriteLine(error);
                 throw;
-            }
-
-            
+            }       
         }
 
         private void Help_Click(object sender, RoutedEventArgs e)
@@ -166,10 +305,10 @@ namespace caeDBManager
         {
             // Start Chromium
             System.Windows.Forms.Integration.WindowsFormsHost host = new System.Windows.Forms.Integration.WindowsFormsHost();
-            browser = new CefSharp.WinForms.ChromiumWebBrowser(App.url)
+            browser = new CefSharp.WinForms.ChromiumWebBrowser(Properties.Settings.Default["DefaultURL"].ToString())
             {
                 Dock = DockStyle.Fill,
-                Size = new System.Drawing.Size(Screen.PrimaryScreen.WorkingArea.Width, Screen.PrimaryScreen.WorkingArea.Height),
+                Size = new System.Drawing.Size(System.Windows.Forms.Screen.PrimaryScreen.WorkingArea.Width, System.Windows.Forms.Screen.PrimaryScreen.WorkingArea.Height),
                 Location = new System.Drawing.Point(0, 0),
 
             };
@@ -201,6 +340,11 @@ namespace caeDBManager
             catch { }
         }
 
+        private void Reload()
+        {
+            browser.Reload();
+        }
+
         public IBrowserHost GetHost()
         {
             throw new NotImplementedException();
@@ -221,10 +365,6 @@ namespace caeDBManager
             throw new NotImplementedException();
         }
 
-        public void Reload(bool ignoreCache = false)
-        {
-            browser.Reload();
-        }
 
         public void StopLoad()
         {
@@ -304,6 +444,17 @@ namespace caeDBManager
                 GoForward();
             }
             catch { }
+        }
+
+        private void Settings_Click(object sender, RoutedEventArgs e)
+        {
+            Form settings = new SettingsForm();
+            settings.Show();
+        }
+
+        public void Reload(bool ignoreCache = false)
+        {
+            xd.Reload(ignoreCache);
         }
     }
 }

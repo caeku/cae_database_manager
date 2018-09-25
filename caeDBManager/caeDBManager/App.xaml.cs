@@ -14,7 +14,8 @@ namespace caeDBManager
         public static String sessions_table = "sessions";
         public static String workers_table = "workers";
         public static String admin_table = "user";
-      //  public static String url = "http://google.com";
-        public static String url = "http://localhost/workStudy";
+        //public static String url = "https://www.facebook.com/";
+        public static String url = "http://localhost/projects/workStudy/";
+        //public static String url = "http://localhost/workStudy";
     }
 }

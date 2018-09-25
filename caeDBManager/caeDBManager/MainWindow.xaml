@@ -6,34 +6,45 @@
         xmlns:local="clr-namespace:caeDBManager"
         mc:Ignorable="d"
         Loaded="MainWindow_OnLoaded"
+        Closing="Window_Closing"
         Background="#32383e"
         WindowState="Maximized"
-        Title="Work Study Tracker" Height="Auto" Width="Auto">
+        Title="Work Study Tracker">
 
-    <Grid>
         <StackPanel>
-            <DockPanel>
+            <DockPanel x:Name="TopPanel" Height="20">
                 <Menu DockPanel.Dock="Top" Background="#32383e">
                     <MenuItem Header="_Main" Foreground="White" Click="MainWindows_Click">
                     </MenuItem>
                     <MenuItem Header="_Advanced Options" Foreground="White" Click="Advanced_Click">
                     </MenuItem>
-                    <MenuItem Header="_About" Foreground="White" Click="Help_Click">
+                <MenuItem Header="_Settings" Foreground="White" Click="Settings_Click">
+                </MenuItem>
+                <MenuItem Header="_About" Foreground="White" Click="Help_Click">
                     </MenuItem>
                 </Menu>
                 <StackPanel></StackPanel>
             </DockPanel>
-            <StackPanel Name="cae_tutor" Height="Auto" Width="Auto">
-                <StackPanel Orientation="Horizontal" Margin="05,05,05,05">
-                    <Button Name="homebbtn" Content="🏠" FontSize="10" Height="20" Width="20" Margin="05,05,05,05" Click="homebbtn_Click"></Button>
-                    <Button Name="refreshbttn" Content="🔄" FontSize="10" Height="20" Width="20" Margin="05,05,05,05" Click="refreshbttn_Click"></Button>
-                    <Button Name="backbttn" Content="←" FontSize="10" Height="20" Width="20" Margin="05,05,05,05" Click="backbttn_Click"></Button>
-                    <Button Name="forwardbttn" Content="→" FontSize="10" Height="20" Width="20" Margin="05,05,05,05" Click="forwardbttn_Click"></Button>
+            <StackPanel Name="cae_tutor">
+            <StackPanel x:Name="BrowserControl" Orientation="Horizontal" Margin="05,05,05,05" Height="42">
+                    <Button Name="homebbtn" FontSize="10" Height="32" Width="32" Margin="05,0,05,0" Click="homebbtn_Click">
+                        <Image Source="Images/homeicon.png"></Image>
+                    </Button>
+                <Button Name="refreshbttn" FontSize="10" Height="32" Width="32" Margin="05,0,05,0" Click="refreshbttn_Click">
+                    <Image Source="Images/refresh.png"></Image>
+                </Button>
+                <Button Name="backbttn" FontSize="10" Height="32" Width="32" Margin="05,0,05,0" Click="backbttn_Click">
+                    <Image Source="Images/back.png"></Image>
+                </Button>
+                <Button Name="forwardbttn" FontSize="10" Height="32" Width="32" Margin="05,0,05,0" Click="forwardbttn_Click">
+                    <Image Source="Images/forward.png"></Image>
+                </Button>
 
                 </StackPanel>
-                <StackPanel Name="browser_Stack"></StackPanel>
+                <StackPanel Name="browser_Stack">
+                </StackPanel>
             </StackPanel>
-            <StackPanel Name="advanced_options">
+            <StackPanel Name="advanced_options" Visibility="Collapsed">
                 <TextBlock Margin="05,05,05,05" FontFamily="Calibri" FontSize="20" Foreground="White"> CAE DATABASE MANAGER</TextBlock>
                 <TextBlock Margin="05,05,05,05" FontFamily="Calibri" Foreground="White"> Options</TextBlock>
                 <StackPanel Orientation="Vertical">
@@ -48,7 +59,6 @@
                     </Button>
                 </StackPanel>
             </StackPanel>
-           
+
         </StackPanel>
-    </Grid>
 </Window>
